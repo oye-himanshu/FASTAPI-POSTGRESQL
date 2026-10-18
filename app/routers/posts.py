@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import HTTPException, status, APIRouter
 
 from app.Oauth2 import get_current_user
@@ -14,10 +16,16 @@ router = APIRouter(prefix="/posts", tags=["Users"])
 def get_posts(
     db: Session = Depends(dependency=get_db),
     get_current_user: schemas.User = Depends(Oauth2.get_current_user),
+    limit: int = 10,
+    skip: int = 0,
+    search: Optional[str] = "",
 ):
     posts = (
         db.query(models.Post)
         .filter(models.Post.created_by == get_current_user.id)
+        .filter(models.Post.title.contains(search))
+        .limit(limit)
+        .offset(skip)
         .all()
     )
     return posts
