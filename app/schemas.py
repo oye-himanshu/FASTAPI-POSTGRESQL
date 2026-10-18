@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class PostBase(BaseModel):
@@ -23,3 +23,40 @@ class Post(PostBase):
 
     # this config class help to covert sql model to dict
     model_config = ConfigDict(from_attributes=True)
+
+
+class BaseUser(BaseModel):
+    email: EmailStr
+    first_name: str
+    last_name: str
+    password: str
+
+
+class CreateUser(BaseUser):
+    pass
+
+
+class UpdateUser(BaseUser):
+    pass
+
+
+class User(BaseModel):
+    email: EmailStr
+    first_name: str
+    last_name: str
+    id: int
+    created_at: datetime
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    id: int
