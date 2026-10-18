@@ -11,8 +11,15 @@ router = APIRouter(prefix="/posts", tags=["Users"])
 
 
 @router.get("/", response_model=list[schemas.Post])
-def get_posts(db: Session = Depends(dependency=get_db)):
-    posts = db.query(models.Post).all()
+def get_posts(
+    db: Session = Depends(dependency=get_db),
+    get_current_user: schemas.User = Depends(Oauth2.get_current_user),
+):
+    posts = (
+        db.query(models.Post)
+        .filter(models.Post.created_by == get_current_user.id)
+        .all()
+    )
     return posts
 
 
@@ -23,13 +30,9 @@ def create_post(
     db: Session = Depends(dependency=get_db),
     get_current_user: schemas.User = Depends(Oauth2.get_current_user),
 ):
-    print(
-        get_current_user,
-        "get_current_userget_current_userget_current_userget_current_user",
-    )
     # new_post = models.Post(title=post.title, content= post.content,publish=post.publish)
     # instead of writing above code we use the below code (what if there are 50 fields)
-    new_post = models.Post(**post.model_dump())
+    new_post = models.Post(created_by=get_current_user.id, **post.model_dump())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -47,6 +50,13 @@ def get_post_by_id(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found with this id"
         )
+
+    if posts.created_by != get_current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for this post.",
+        )
+
     return posts
 
 
@@ -56,12 +66,19 @@ def delete_post_by_id(
     db: Session = Depends(dependency=get_db),
     get_current_user: schemas.User = Depends(Oauth2.get_current_user),
 ):
-    posts = db.query(models.Post).filter(models.Post.id == id).first()
+    posts_query = db.query(models.Post).filter(models.Post.id == id)
+    posts = posts_query.first()
 
     if posts == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found with this id"
         )
+    if posts.created_by != get_current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for this post.",
+        )
+
     db.delete(posts)
     db.commit()
     return posts
@@ -80,6 +97,12 @@ def update_post(
     if post is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found with this id"
+        )
+
+    if post.created_by != get_current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for this post.",
         )
 
     post_query.update(

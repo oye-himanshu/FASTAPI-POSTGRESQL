@@ -1,6 +1,6 @@
 from .database import Base
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String, text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class Post(Base):
@@ -15,6 +15,11 @@ class Post(Base):
     created_at: Mapped[object] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
     )
+    created_by: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    # the below line is used to get the details of the user (we apply join)
+    created_by_details = relationship("User")
 
 
 class User(Base):
