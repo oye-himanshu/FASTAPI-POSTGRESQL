@@ -7,12 +7,14 @@ from .. import schemas, models
 from ..database import get_db
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from .. import Oauth2
 
 router = APIRouter(prefix="/posts", tags=["Users"])
 
 
-@router.get("/", response_model=list[schemas.Post])
+# @router.get("/", response_model=list[schemas.Post])
+@router.get("/", response_model=list[schemas.PostWithJoin])
 def get_posts(
     db: Session = Depends(dependency=get_db),
     get_current_user: schemas.User = Depends(Oauth2.get_current_user),
@@ -28,7 +30,15 @@ def get_posts(
         .offset(skip)
         .all()
     )
-    return posts
+    # joins on two tables
+    results = (
+        db.query(models.Post, func.count(models.Vote.id).label("vote_counts"))
+        .join(models.Vote, models.Post.id == models.Vote.posts_id, isouter=True)
+        .group_by(models.Post.id)
+    ).all()
+    print(results, "results")
+
+    return results
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)

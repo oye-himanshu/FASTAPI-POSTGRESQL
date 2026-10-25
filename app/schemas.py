@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, conint
 
 
 class BaseUser(BaseModel):
@@ -55,6 +55,11 @@ class Post(PostBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PostWithJoin(BaseModel):
+    Post: Post
+    vote_counts: int
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -62,3 +67,8 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: int
+
+
+class VoteCreate(BaseModel):
+    post_id: int
+    dir: int
